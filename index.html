@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CycleBeat Interval</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CycleBeat">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0c193c">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;800&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<style>
+:root{--fg:#f2f6fc;--mute:#9db3d3;--warm:#a9d1f7;--o:#f28a2e;--y:#f5d96b;--line:rgba(255,255,255,.16);--card:rgba(255,255,255,.07)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;color:var(--fg);font-family:"Noto Sans KR",system-ui,sans-serif}
+body{background:linear-gradient(165deg,#0c193c 0%,#182a50 50%,#2b63a6 100%) fixed;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:460px;margin:0 auto;padding:14px 18px 28px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;gap:14px}
+header img{width:76px;height:76px;border-radius:20px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.brand{font-family:Montserrat,"Noto Sans KR",sans-serif;font-size:27px;line-height:1;letter-spacing:.5px}
+.brand b{font-weight:800}.brand span{font-weight:300}
+.brand small{display:block;margin-top:7px;font-weight:500;font-size:13px;letter-spacing:6px;color:var(--mute)}
+.stage{text-align:center;font-size:30px;font-weight:900;color:var(--warm)}
+.stage.w{background:linear-gradient(90deg,var(--o),var(--y));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ringwrap{position:relative;width:min(76vw,290px);aspect-ratio:1;margin:0 auto}
+svg{width:100%;height:100%;transform:rotate(-90deg)}
+.bg{stroke:rgba(255,255,255,.12)}.fg{stroke:url(#gp)}.ringwrap.w .fg{stroke:url(#gw)}
+.time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.time b{font-family:Montserrat,sans-serif;font-size:62px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.time span{color:var(--mute);font-size:14px;margin-top:8px}
+.info{display:flex;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--mute)}
+.info strong{color:var(--fg)}
+.btns{display:flex;gap:10px}
+button{font:inherit;font-weight:700;border-radius:14px;padding:15px;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line)}
+button:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+.go{flex:2;background:linear-gradient(90deg,var(--o),var(--y));color:#0c193c;border:0;font-size:18px;font-weight:900}
+.btns button{flex:1}
+.opts{display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:14px;color:var(--mute)}
+.opts select,.opts input{font:inherit;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.opts input{width:52px}
+small{color:var(--mute);text-align:center;font-size:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+<header><img src="icon-180.png" alt=""><div class="brand"><span>CYCLE</span><b>BEAT</b><small>INTERVAL</small></div></header>
+<div class="stage" id="stage">준비</div>
+<div class="ringwrap" id="rw">
+<svg viewBox="0 0 120 120"><defs><linearGradient id="gp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#7db4ea"/></linearGradient><linearGradient id="gw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5d96b"/><stop offset="1" stop-color="#f26b2e"/></linearGradient></defs><circle class="bg" cx="60" cy="60" r="52" fill="none" stroke-width="9"/><circle class="fg" id="ring" cx="60" cy="60" r="52" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg>
+<div class="time"><b id="t">00:00</b><span id="next">다음: -</span></div>
+</div>
+<div class="info"><span><strong id="round">1</strong> / <span id="rtot">4</span> 세트</span><span>단계 <strong id="step">1</strong> / 11</span><span>남은 <strong id="left">-</strong></span></div>
+<div class="btns"><button class="go" id="go">시작</button><button id="skip">건너뛰기</button><button id="reset">처음부터</button></div>
+<div class="opts"><label>단위 <select id="unit"><option value="1">초</option><option value="60">분</option></select></label><label>반복 <input id="reps" type="number" min="1" max="10" value="4"></label><button id="test">음성 테스트</button></div>
+<small id="vn"></small>
+<small>첫 준비운동은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const BASE=[["p",0],["w",50],["p",10],["w",40],["p",20],["w",30],["p",30],["w",20],["p",40],["w",10],["p",50]];
+const NAME={p:"준비운동",w:"운동"};
+let voice=null,stages=[],reps=4,round=0,idx=0,end=0,rem=0,running=false,timer=null,warned=false,wake=null;
+function pickVoice(){
+const ko=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));
+const y=ko.filter(v=>/yuna|유나/i.test(v.name)).sort((a,b)=>/premium|enhanced|프리미엄|향상/i.test(b.name)-/premium|enhanced|프리미엄|향상/i.test(a.name));
+voice=y[0]||ko.find(v=>/sun-?hi|선희|heami|혜미|google|female|여/i.test(v.name))||ko[0]||null;
+const vn=document.getElementById("vn");
+if(vn)vn.textContent="음성: "+(voice?voice.name:"기본 한국어")+(y[0]?"":" (유나가 없어 대체)");
+}
+if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function say(txt){
+if(!("speechSynthesis" in window))return;
+speechSynthesis.cancel();
+const u=new SpeechSynthesisUtterance(txt);
+u.lang="ko-KR";u.rate=1;u.pitch=1.15;
+if(voice)u.voice=voice;
+speechSynthesis.speak(u);
+}
+function dur(s){const m=Math.floor(s/60),r=s%60;return (m?m+"분 ":"")+(r?r+"초":"")}
+function mmss(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function build(){
+const u=+$("unit").value;
+stages=BASE.map(([k,n],i)=>({k,sec:i===0?120:n*u}));
+reps=Math.max(1,Math.min(10,+$("reps").value||4));
+$("rtot").textContent=reps;
+}
+function totalLeft(){
+let s=rem;
+for(let i=idx+1;i<stages.length;i++)s+=stages[i].sec;
+return s+(reps-1-round)*stages.reduce((a,b)=>a+b.sec,0);
+}
+function paint(){
+const st=stages[idx],w=st.k==="w";
+$("stage").textContent=NAME[st.k];$("stage").className="stage"+(w?" w":"");
+$("rw").className="ringwrap"+(w?" w":"");
+$("t").textContent=mmss(rem);
+const nx=stages[idx+1];
+$("next").textContent=nx?"다음: "+NAME[nx.k]+" "+dur(nx.sec):(round<reps-1?"다음: 다음 세트":"마지막 단계");
+$("round").textContent=round+1;$("step").textContent=idx+1;
+$("left").textContent=mmss(totalLeft());
+$("ring").style.strokeDashoffset=326.7*(1-rem/st.sec);
+}
+function enter(announce){
+const st=stages[idx];
+rem=st.sec;warned=false;end=Date.now()+rem*1000;
+if(announce){
+const pre=idx===0?round+1+"세트 시작. ":"";
+say(pre+NAME[st.k]+" "+dur(st.sec)+" 시작합니다.");
+}
+paint();
+}
+function catchUp(){
+let over=-rem;
+for(;;){
+idx++;if(idx>=stages.length){idx=0;round++}
+if(round>=reps){finish();return}
+if(over>=stages[idx].sec)over-=stages[idx].sec;else break;
+}
+const st=stages[idx];rem=st.sec-over;end=Date.now()+rem*1000;warned=rem<=10;
+say((idx===0?round+1+"세트 시작. ":"")+NAME[st.k]+" "+dur(st.sec)+" 시작합니다.");
+paint();
+}
+function next(){rem=0;catchUp()}
+let au=null;
+function keepAlive(on){
+try{
+if(on){
+if(!au){
+const n=8000,b=new Uint8Array(44+n),d=new DataView(b.buffer);
+const W=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
+W(0,"RIFF");d.setUint32(4,36+n,true);W(8,"WAVEfmt ");d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,8000,true);d.setUint32(28,8000,true);d.setUint16(32,1,true);d.setUint16(34,8,true);W(36,"data");d.setUint32(40,n,true);b.fill(128,44);
+au=new Audio(URL.createObjectURL(new Blob([b],{type:"audio/wav"})));au.loop=true;
+}
+au.play().catch(()=>{});
+if("mediaSession" in navigator){
+navigator.mediaSession.metadata=new MediaMetadata({title:"실내자전거 인터벌"});
+navigator.mediaSession.setActionHandler("pause",()=>{if(running)$("go").click()});
+navigator.mediaSession.setActionHandler("play",()=>{if(!running)$("go").click()});
+}
+}else if(au)au.pause();
+}catch(e){}
+}
+function finish(){
+stop();round=reps-1;idx=stages.length-1;rem=0;paint();
+$("stage").textContent="완료";$("stage").className="stage";
+say("모든 운동이 끝났습니다. 수고하셨습니다.");
+$("go").textContent="다시 시작";started=false;
+}
+function tick(){
+rem=(end-Date.now())/1000;
+const st=stages[idx];
+if(!warned&&st.sec>=20&&rem<=10&&rem>9){warned=true;say("10초 남았습니다.")}
+if(rem<=0){catchUp();return}
+paint();
+}
+let started=false;
+async function lock(){try{wake=await navigator.wakeLock.request("screen")}catch(e){}}
+function stop(){running=false;clearInterval(timer);keepAlive(false);try{wake&&wake.release()}catch(e){}$("go").textContent="계속"}
+$("go").onclick=()=>{
+if(running){stop();rem=(end-Date.now())/1000;speechSynthesis.cancel();return}
+if(!started){build();round=0;idx=0;started=true;running=true;enter(true)}
+else{running=true;end=Date.now()+rem*1000}
+$("go").textContent="일시정지";
+keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250);
+};
+$("skip").onclick=()=>{if(!started)return;if(!running){running=true;$("go").textContent="일시정지";keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250)}next()};
+$("reset").onclick=()=>{stop();speechSynthesis.cancel();started=false;build();round=0;idx=0;rem=stages[0].sec;paint();$("go").textContent="시작"};
+$("test").onclick=()=>say("준비운동 2분 시작합니다.");
+$("unit").onchange=$("reps").onchange=()=>{if(!started){build();round=0;idx=0;rem=stages[0].sec;paint()}};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&running){lock();tick()}});
+build();rem=stages[0].sec;paint();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
