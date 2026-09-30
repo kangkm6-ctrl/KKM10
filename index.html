@@ -152,7 +152,6 @@ $("go").textContent="다시 시작";started=false;
 function tick(){
 rem=(end-Date.now())/1000;
 const st=stages[idx];
-if(!warned&&st.sec>=20&&rem<=10&&rem>9){warned=true;say("10초 남았습니다.")}
 if(rem<=0){catchUp();return}
 paint();
 }
