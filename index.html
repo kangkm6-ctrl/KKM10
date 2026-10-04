@@ -52,16 +52,16 @@ small{color:var(--mute);text-align:center;font-size:12px;line-height:1.5}
 <svg viewBox="0 0 120 120"><defs><linearGradient id="gp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#7db4ea"/></linearGradient><linearGradient id="gw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5d96b"/><stop offset="1" stop-color="#f26b2e"/></linearGradient></defs><circle class="bg" cx="60" cy="60" r="52" fill="none" stroke-width="9"/><circle class="fg" id="ring" cx="60" cy="60" r="52" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg>
 <div class="time"><b id="t">00:00</b><span id="next">다음: -</span></div>
 </div>
-<div class="info"><span><strong id="round">1</strong> / <span id="rtot">4</span> 세트</span><span>단계 <strong id="step">1</strong> / 11</span><span>남은 <strong id="left">-</strong></span></div>
+<div class="info"><span><strong id="round">1</strong> / <span id="rtot">4</span> 세트</span><span id="stp">단계 <strong>1</strong> / 11</span><span>남은 <strong id="left">-</strong></span></div>
 <div class="btns"><button class="go" id="go">시작</button><button id="skip">건너뛰기</button><button id="reset">처음부터</button></div>
 <div class="opts"><label>단위 <select id="unit"><option value="1">초</option><option value="60">분</option></select></label><label>반복 <input id="reps" type="number" min="1" max="10" value="4"></label><button id="test">음성 테스트</button></div>
 <small id="vn"></small>
-<small>첫 준비운동은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
+<small>첫 준비운동·마무리운동은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
 </main>
 <script>
 const $=id=>document.getElementById(id);
 const BASE=[["p",0],["w",50],["p",10],["w",40],["p",20],["w",30],["p",30],["w",20],["p",40],["w",10],["p",50]];
-const NAME={p:"준비운동",w:"운동"};
+const NAME={p:"준비운동",w:"운동",c:"마무리운동"};
 let voice=null,stages=[],reps=4,round=0,idx=0,end=0,rem=0,running=false,timer=null,warned=false,wake=null;
 function pickVoice(){
 const ko=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));
@@ -83,14 +83,16 @@ function dur(s){const m=Math.floor(s/60),r=s%60;return (m?m+"분 ":"")+(r?r+"초
 function mmss(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
 function build(){
 const u=+$("unit").value;
-stages=BASE.map(([k,n],i)=>({k,sec:i===0?120:n*u}));
+stages=BASE.map(([k,n],i)=>({k,sec:i===0?120:n*u}));stages.push({k:"c",sec:120});
 reps=Math.max(1,Math.min(10,+$("reps").value||4));
 $("rtot").textContent=reps;
 }
 function totalLeft(){
+const c=stages[stages.length-1].sec,core=stages.slice(0,-1);
 let s=rem;
-for(let i=idx+1;i<stages.length;i++)s+=stages[i].sec;
-return s+(reps-1-round)*stages.reduce((a,b)=>a+b.sec,0);
+if(stages[idx].k==="c")return s;
+for(let i=idx+1;i<core.length;i++)s+=core[i].sec;
+return s+(reps-1-round)*core.reduce((a,b)=>a+b.sec,0)+c;
 }
 function paint(){
 const st=stages[idx],w=st.k==="w";
@@ -99,7 +101,7 @@ $("rw").className="ringwrap"+(w?" w":"");
 $("t").textContent=mmss(rem);
 const nx=stages[idx+1];
 $("next").textContent=nx?"다음: "+NAME[nx.k]+" "+dur(nx.sec):(round<reps-1?"다음: 다음 세트":"마지막 단계");
-$("round").textContent=round+1;$("step").textContent=idx+1;
+$("round").textContent=round+1;$("stp").innerHTML=st.k==="c"?"<strong>마무리</strong>":"단계 <strong>"+(idx+1)+"</strong> / 11";
 $("left").textContent=mmss(totalLeft());
 $("ring").style.strokeDashoffset=326.7*(1-rem/st.sec);
 }
@@ -115,7 +117,7 @@ paint();
 function catchUp(){
 let over=-rem;
 for(;;){
-idx++;if(idx>=stages.length){idx=0;round++}
+idx++;if(idx>=stages.length){idx=0;round++}else if(stages[idx].k==="c"&&round<reps-1){idx=0;round++}
 if(round>=reps){finish();return}
 if(over>=stages[idx].sec)over-=stages[idx].sec;else break;
 }
@@ -146,7 +148,7 @@ navigator.mediaSession.setActionHandler("play",()=>{if(!running)$("go").click()}
 function finish(){
 stop();round=reps-1;idx=stages.length-1;rem=0;paint();
 $("stage").textContent="완료";$("stage").className="stage";
-say("모든 운동이 끝났습니다. 수고하셨습니다.");
+say("운동을 모두 마쳤습니다. 수고하셨습니다.");
 $("go").textContent="다시 시작";started=false;
 }
 function tick(){
