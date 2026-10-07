@@ -56,12 +56,12 @@ small{color:var(--mute);text-align:center;font-size:12px;line-height:1.5}
 <div class="btns"><button class="go" id="go">시작</button><button id="skip">건너뛰기</button><button id="reset">처음부터</button></div>
 <div class="opts"><label>단위 <select id="unit"><option value="1">초</option><option value="60">분</option></select></label><label>반복 <input id="reps" type="number" min="1" max="10" value="4"></label><button id="test">음성 테스트</button></div>
 <small id="vn"></small>
-<small>첫 준비운동·마무리운동은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
+<small>첫 회복과 마지막 회복은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
 </main>
 <script>
 const $=id=>document.getElementById(id);
 const BASE=[["p",0],["w",50],["p",10],["w",40],["p",20],["w",30],["p",30],["w",20],["p",40],["w",10],["p",50]];
-const NAME={p:"준비운동",w:"운동",c:"마무리운동"};
+const NAME={p:"회복",w:"운동",c:"회복"};
 let voice=null,stages=[],reps=4,round=0,idx=0,end=0,rem=0,running=false,timer=null,warned=false,wake=null;
 function pickVoice(){
 const ko=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));
@@ -169,7 +169,7 @@ keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250);
 };
 $("skip").onclick=()=>{if(!started)return;if(!running){running=true;$("go").textContent="일시정지";keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250)}next()};
 $("reset").onclick=()=>{stop();speechSynthesis.cancel();started=false;build();round=0;idx=0;rem=stages[0].sec;paint();$("go").textContent="시작"};
-$("test").onclick=()=>say("준비운동 2분 시작합니다.");
+$("test").onclick=()=>say("회복 2분 시작합니다.");
 $("unit").onchange=$("reps").onchange=()=>{if(!started){build();round=0;idx=0;rem=stages[0].sec;paint()}};
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&running){lock();tick()}});
 build();rem=stages[0].sec;paint();
