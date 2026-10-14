@@ -56,12 +56,12 @@ small{color:var(--mute);text-align:center;font-size:12px;line-height:1.5}
 <div class="btns"><button class="go" id="go">시작</button><button id="skip">건너뛰기</button><button id="reset">처음부터</button></div>
 <div class="opts"><label>단위 <select id="unit"><option value="1">초</option><option value="60">분</option></select></label><label>반복 <input id="reps" type="number" min="1" max="10" value="4"></label><button id="test">음성 테스트</button></div>
 <small id="vn"></small>
-<small>첫 회복과 마지막 회복은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
+<small>첫 준비운동과 마무리운동은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
 </main>
 <script>
 const $=id=>document.getElementById(id);
 const BASE=[["p",0],["w",50],["p",10],["w",40],["p",20],["w",30],["p",30],["w",20],["p",40],["w",10],["p",50]];
-const NAME={p:"회복",w:"운동",c:"회복"};
+const NAME={p:"회복",w:"운동",c:"마무리운동"};function lab(i,r){return i===0&&r===0?"준비운동":NAME[stages[i].k]}
 let voice=null,stages=[],reps=4,round=0,idx=0,end=0,rem=0,running=false,timer=null,warned=false,wake=null;
 function pickVoice(){
 const ko=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));
@@ -96,11 +96,11 @@ return s+(reps-1-round)*core.reduce((a,b)=>a+b.sec,0)+c;
 }
 function paint(){
 const st=stages[idx],w=st.k==="w";
-$("stage").textContent=NAME[st.k];$("stage").className="stage"+(w?" w":"");
+$("stage").textContent=lab(idx,round);$("stage").className="stage"+(w?" w":"");
 $("rw").className="ringwrap"+(w?" w":"");
 $("t").textContent=mmss(rem);
 const nx=stages[idx+1];
-$("next").textContent=nx?"다음: "+NAME[nx.k]+" "+dur(nx.sec):(round<reps-1?"다음: 다음 세트":"마지막 단계");
+$("next").textContent=nx?"다음: "+lab(idx+1,round)+" "+dur(nx.sec):(round<reps-1?"다음: 다음 세트":"마지막 단계");
 $("round").textContent=round+1;$("stp").innerHTML=st.k==="c"?"<strong>마무리</strong>":"단계 <strong>"+(idx+1)+"</strong> / 11";
 $("left").textContent=mmss(totalLeft());
 $("ring").style.strokeDashoffset=326.7*(1-rem/st.sec);
@@ -110,7 +110,7 @@ const st=stages[idx];
 rem=st.sec;warned=false;end=Date.now()+rem*1000;
 if(announce){
 const pre=idx===0?round+1+"세트 시작. ":"";
-say(pre+NAME[st.k]+" "+dur(st.sec)+" 시작합니다.");
+say(pre+lab(idx,round)+" "+dur(st.sec)+" 시작합니다.");
 }
 paint();
 }
@@ -122,7 +122,7 @@ if(round>=reps){finish();return}
 if(over>=stages[idx].sec)over-=stages[idx].sec;else break;
 }
 const st=stages[idx];rem=st.sec-over;end=Date.now()+rem*1000;warned=rem<=10;
-say((idx===0?round+1+"세트 시작. ":"")+NAME[st.k]+" "+dur(st.sec)+" 시작합니다.");
+say((idx===0?round+1+"세트 시작. ":"")+lab(idx,round)+" "+dur(st.sec)+" 시작합니다.");
 paint();
 }
 function next(){rem=0;catchUp()}
@@ -169,7 +169,7 @@ keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250);
 };
 $("skip").onclick=()=>{if(!started)return;if(!running){running=true;$("go").textContent="일시정지";keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250)}next()};
 $("reset").onclick=()=>{stop();speechSynthesis.cancel();started=false;build();round=0;idx=0;rem=stages[0].sec;paint();$("go").textContent="시작"};
-$("test").onclick=()=>say("회복 2분 시작합니다.");
+$("test").onclick=()=>say("준비운동 2분 시작합니다.");
 $("unit").onchange=$("reps").onchange=()=>{if(!started){build();round=0;idx=0;rem=stages[0].sec;paint()}};
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&running){lock();tick()}});
 build();rem=stages[0].sec;paint();
