@@ -55,6 +55,7 @@ small{color:var(--mute);text-align:center;font-size:12px;line-height:1.5}
 <div class="info"><span><strong id="round">1</strong> / <span id="rtot">4</span> 세트</span><span id="stp">단계 <strong>1</strong> / 11</span><span>남은 <strong id="left">-</strong></span></div>
 <div class="btns"><button class="go" id="go">시작</button><button id="skip">건너뛰기</button><button id="reset">처음부터</button></div>
 <div class="opts"><label>단위 <select id="unit"><option value="1">초</option><option value="60">분</option></select></label><label>반복 <input id="reps" type="number" min="1" max="10" value="4"></label><button id="test">음성 테스트</button></div>
+<div class="opts"><label>음성 <select id="vs" style="max-width:62vw"></select></label></div>
 <small id="vn"></small>
 <small>첫 준비운동과 마무리운동은 2분, 나머지 숫자는 선택한 단위(초/분)입니다.<br>화면을 잠그거나 다른 앱으로 나가도 계속 진행됩니다.<br>(무음 오디오로 유지 · 이어폰/소리 켜기 권장)</small>
 </main>
@@ -65,17 +66,20 @@ const NAME={p:"회복",w:"운동",c:"마무리운동"};function lab(i,r){return 
 let voice=null,stages=[],reps=4,round=0,idx=0,end=0,rem=0,running=false,timer=null,warned=false,wake=null;
 function pickVoice(){
 const ko=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));
-const y=ko.filter(v=>/yuna|유나/i.test(v.name)).sort((a,b)=>/premium|enhanced|프리미엄|향상/i.test(b.name)-/premium|enhanced|프리미엄|향상/i.test(a.name));
-voice=y[0]||ko.find(v=>/sun-?hi|선희|heami|혜미|google|female|여/i.test(v.name))||ko[0]||null;
-const vn=document.getElementById("vn");
-if(vn)vn.textContent="음성: "+(voice?voice.name:"기본 한국어")+(y[0]?"":" (유나가 없어 대체)");
+const rk=v=>{const n=v.name;return(/siri|시리/i.test(n)?100:0)+(/yuna|유나/i.test(n)?50:0)+(/premium|프리미엄/i.test(n)?20:/enhanced|향상/i.test(n)?10:0)};
+ko.sort((a,b)=>rk(b)-rk(a));
+let sv=null;try{sv=localStorage.getItem("bikeVoice")}catch(e){}
+voice=ko.find(v=>v.voiceURI===sv)||ko[0]||null;
+const vs=$("vs");
+if(vs){vs.innerHTML="";ko.forEach(v=>{const o=document.createElement("option");o.value=v.voiceURI;o.textContent=v.name;if(voice&&v.voiceURI===voice.voiceURI)o.selected=true;vs.appendChild(o)});if(!ko.length)vs.innerHTML="<option>한국어 음성 없음</option>"}
+const vn=$("vn");if(vn)vn.textContent="음성: "+(voice?voice.name:"기본 한국어");
 }
 if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
 function say(txt){
 if(!("speechSynthesis" in window))return;
 speechSynthesis.cancel();
 const u=new SpeechSynthesisUtterance(txt);
-u.lang="ko-KR";u.rate=1;u.pitch=1.15;
+u.lang="ko-KR";u.rate=1;u.pitch=1;
 if(voice)u.voice=voice;
 speechSynthesis.speak(u);
 }
@@ -169,6 +173,7 @@ keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250);
 };
 $("skip").onclick=()=>{if(!started)return;if(!running){running=true;$("go").textContent="일시정지";keepAlive(true);lock();clearInterval(timer);timer=setInterval(tick,250)}next()};
 $("reset").onclick=()=>{stop();speechSynthesis.cancel();started=false;build();round=0;idx=0;rem=stages[0].sec;paint();$("go").textContent="시작"};
+$("vs").onchange=()=>{const v=speechSynthesis.getVoices().find(x=>x.voiceURI===$("vs").value);if(v){voice=v;try{localStorage.setItem("bikeVoice",v.voiceURI)}catch(e){}$("vn").textContent="음성: "+v.name;say("준비운동 2분 시작합니다.")}};
 $("test").onclick=()=>say("준비운동 2분 시작합니다.");
 $("unit").onchange=$("reps").onchange=()=>{if(!started){build();round=0;idx=0;rem=stages[0].sec;paint()}};
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&running){lock();tick()}});
