@@ -84,17 +84,24 @@ if(voice)u.voice=voice;
 speechSynthesis.speak(u);
 }
 let ca=null,CU={};
-function mkWav(seq){const sr=11025;let n=0;seq.forEach(x=>n+=Math.round(sr*x[1]/1000));
+function mkWav(notes,sp){const sr=11025;let end=0;notes.forEach(x=>end=Math.max(end,x[1]+x[2]));
+const n=Math.round(sr*end/1000),f=new Float32Array(n);
+notes.forEach(([fr,t0,len])=>{const s0=Math.round(sr*t0/1000),m=Math.round(sr*len/1000),k=5/(len/1000);
+for(let i=0;i<m&&s0+i<n;i++){const t=i/sr,e=Math.min(1,i/(sr*.02))*Math.exp(-k*t);
+f[s0+i]+=e*(Math.sin(2*Math.PI*fr*t)+.28*Math.sin(2*Math.PI*fr*2*t)*Math.exp(-2*t)+.08*Math.sin(2*Math.PI*fr*3*t)*Math.exp(-4*t))}});
+let pk=0;for(let i=0;i<n;i++)pk=Math.max(pk,Math.abs(f[i]));
 const b=new Uint8Array(44+n*2),d=new DataView(b.buffer),W=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
 W(0,"RIFF");d.setUint32(4,36+n*2,true);W(8,"WAVEfmt ");d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,sr,true);d.setUint32(28,sr*2,true);d.setUint16(32,2,true);d.setUint16(34,16,true);W(36,"data");d.setUint32(40,n*2,true);
-let o=44;seq.forEach(([f,ms])=>{const m=Math.round(sr*ms/1000);for(let i=0;i<m;i++){let v=0;if(f){v=Math.sin(2*Math.PI*f*i/sr)*.6*Math.min(1,i/150,(m-i)/150)}d.setInt16(o,v*32767,true);o+=2}});
-return{u:URL.createObjectURL(new Blob([b],{type:"audio/wav"})),ms:n/sr*1000}}
+for(let i=0;i<n;i++)d.setInt16(44+i*2,f[i]/(pk||1)*.55*32767,true);
+return{u:URL.createObjectURL(new Blob([b],{type:"audio/wav"})),sp}}
 function initCues(){if(ca)return;ca=new Audio();
-CU.w=mkWav([[988,150],[0,90],[988,150]]);CU.p=mkWav([[523,320]]);CU.c=mkWav([[784,170],[0,60],[659,170],[0,60],[523,300]]);
-CU.done=mkWav([[523,160],[0,50],[659,160],[0,50],[784,160],[0,50],[1047,420]])}
+CU.w=mkWav([[659,0,1100],[880,200,1300]],750);
+CU.p=mkWav([[330,0,2200],[494,120,1800]],900);
+CU.c=mkWav([[784,0,1500],[659,300,1500],[523,600,1900]],1150);
+CU.done=mkWav([[523,0,2400],[659,230,2300],[784,460,2200],[1047,690,2600]],1500)}
 function cs(k,txt){initCues();const c=CU[k]||CU.p;
 try{ca.src=c.u;ca.currentTime=0;ca.play().catch(()=>{})}catch(e){}
-setTimeout(()=>say(txt),c.ms+150)}
+setTimeout(()=>say(txt),c.sp)}
 function unlock(){initCues();try{ca.muted=true;ca.src=CU.p.u;ca.play().then(()=>{ca.pause();ca.muted=false}).catch(()=>{ca.muted=false})}catch(e){}}
 function dur(s){const m=Math.floor(s/60),r=s%60;return (m?m+"분 ":"")+(r?r+"초":"")}
 function mmss(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
